@@ -1,0 +1,14 @@
+You are working on a Starter CRM prototype — a single HTML file desktop interface.
+
+Rules:
+- Desktop only. No responsive, no mobile breakpoints.
+- Single HTML file. No frameworks, no bundlers, no npm.
+- Vanilla JS only. No React, no Vue, no jQuery.
+- All styles in <style> tag, all scripts in <script> tag.
+- Font: Golos Text from Google Fonts — already connected.
+- Do not remove or break existing functionality.
+- Every change must be backward compatible.
+- Comments in Russian for UI sections, English for logic.
+- Pixel-perfect to the reference screenshots provided.
+- every time check ROADMAP.md before doing edits
+- answer in russian
