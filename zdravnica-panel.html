@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Здравница AI — операционная панель (демо)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-page: #F5F3EF;
+      --bg-surface: #FFFFFF;
+      --sidebar-surface: #FFFFFF;
+      --sidebar-active-bg: #1A1A1A;
+      --border: #E8E4DE;
+      --text-primary: #1A1A1A;
+      --text-secondary: #6B6560;
+      --text-disabled: #B0AAA4;
+      --accent: #F97316;
+      --accent-hover: #EA6C0A;
+      --accent-light: #FEF0E6;
+      --row-hover: #F9F7F4;
+
+      --urgent-text: #B91C1C;
+      --hot-text: #C2410C;
+      --wait-text: #A16207;
+      --region-text: #C2410C;
+
+      --urgent-bg: #FEF2F2;
+      --hot-bg: #FFF7ED;
+      --wait-bg: #FFFBEB;
+      --region-bg: #FFF7ED;
+      --muted-bg: #F4F4F5;
+
+      --z-sidebar: 100;
+      --z-sidebar-backdrop: 90;
+      --z-main: 0;
+      --z-modal: 550;
+      --z-toast: 1000;
+      --mobile-break: 900px;
+    }
+
+    body {
+      font-family: 'Golos Text', sans-serif;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      display: flex;
+      min-height: 100vh;
+      font-size: 14px;
+      min-width: 0;
+      overflow-x: hidden;
+    }
+    body.no-scroll { overflow: hidden; }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 280px;
+      min-height: 100vh;
+      background: var(--sidebar-surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 12px 16px 14px;
+      flex-shrink: 0;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: var(--z-sidebar);
+    }
+
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: var(--z-sidebar-backdrop);
+      background: rgba(26, 22, 18, 0.45);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .sidebar-backdrop.visible { display: block; }
+
+    .mobile-menu-btn {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      margin: -8px 4px -8px -6px;
+      padding: 0;
+      border: none;
+      border-radius: 10px;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      cursor: pointer;
+      flex-shrink: 0;
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mobile-menu-btn:hover { background: #EBE8E2; }
+    .mobile-menu-btn svg { width: 22px; height: 22px; }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 4px 16px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #1A1A1A 0%, #404040 100%);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sidebar-brand-text { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+    .sidebar-nav { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; flex: 1; }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 2px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+      border: none;
+      background: none;
+      font-family: inherit;
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-item:hover { background: #F4F4F5; }
+    .nav-item.active { background: var(--sidebar-active-bg); color: #fff; font-weight: 500; }
+    .nav-icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--text-secondary); }
+    .nav-item.active .nav-icon { color: #fff; }
+
+    /* MAIN */
+    .main {
+      margin-left: 280px;
+      flex: 1;
+      min-width: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-page);
+      position: relative;
+      z-index: var(--z-main);
+    }
+
+    .int-bar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .int-bar-left { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .int-title { font-size: 15px; font-weight: 600; }
+    .int-statuses { display: flex; align-items: center; gap: 20px; font-size: 13px; color: var(--text-secondary); }
+    .int-chip { display: inline-flex; align-items: center; gap: 8px; }
+    .int-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .int-dot--ok { background: #1B873B; }
+    .int-name { font-weight: 500; color: var(--text-primary); }
+    .int-time { font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+    .content { padding: 22px 28px 32px; flex: 1; min-width: 0; }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* Counters / markers */
+    .counters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 20px;
+      margin-bottom: 22px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .counters .cnt-item { display: inline-flex; align-items: center; gap: 10px; color: var(--text-secondary); }
+    .counters .cnt-item b { color: var(--text-primary); font-weight: 600; }
+
+    .state-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .state-dot-urgent { background: #D32F2F; }
+    .state-dot-wait { background: #F9A825; }
+    .state-dot-region { background: #F57C00; }
+    .state-dot-closed { background: #9E9E9E; }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      margin: 20px 0 10px;
+    }
+    .section-title:first-of-type { margin-top: 0; }
+
+    /* Lead cards */
+    .lead-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: box-shadow 0.15s, border-color 0.15s;
+    }
+    .lead-card:hover { border-color: #D4CEC6; box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
+
+    .lead-card__head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .lead-card__head .lead-card__badge { margin-bottom: 0; flex: 1; min-width: 0; }
+
+    .lead-card-dismiss {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .lead-card-dismiss:hover {
+      background: #ECFDF5;
+      border-color: #6EE7B7;
+      color: #047857;
+    }
+    .lead-card-dismiss svg { width: 18px; height: 18px; pointer-events: none; }
+
+    .lead-card-restore {
+      flex-shrink: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .lead-card-restore:hover {
+      background: #EFF6FF;
+      border-color: #BFDBFE;
+      color: #1D4ED8;
+    }
+    .lead-card-restore svg { width: 18px; height: 18px; pointer-events: none; }
+    .lead-card--processed .lead-card-dismiss { display: none; }
+    .lead-card--processed .lead-card-restore { display: inline-flex; }
+
+    .queue-section { display: block; }
+
+    .lead-card__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: 0.02em;
+    }
+
+    .lead-card__badge.urgent { color: var(--urgent-text); }
+    .lead-card__badge.hot { color: var(--hot-text); }
+    .lead-card__badge.wait { color: var(--wait-text); }
+    .lead-card__badge.region { color: var(--region-text); }
+    .lead-card__badge.muted { color: var(--text-secondary); font-weight: 600; }
+
+    .lead-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .lead-dot-urgent { background: #D32F2F; }
+    .lead-dot-hot { background: #F57C00; }
+    .lead-dot-wait { background: #F9A825; }
+    .lead-dot-region { background: #F57C00; }
+    .lead-dot-muted { background: #9E9E9E; }
+
+    .lead-card__meta { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
+    .lead-card__snippet { font-size: 13px; color: var(--text-primary); line-height: 1.45; margin-bottom: 8px; }
+    .lead-card__note { font-size: 12px; color: var(--text-disabled); margin-bottom: 10px; }
+    .lead-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .btn-sm {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text-primary);
+      transition: background 0.12s;
+    }
+    .btn-sm:hover { background: var(--bg-page); }
+    .btn-sm.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-sm.primary:hover { background: var(--accent-hover); }
+
+    details.agent-closed,
+    details.manager-processed { margin-top: 8px; }
+    details.agent-closed summary,
+    details.manager-processed summary {
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-secondary);
+      padding: 8px 0;
+      list-style: none;
+    }
+    details.agent-closed summary::-webkit-details-marker,
+    details.manager-processed summary::-webkit-details-marker { display: none; }
+    details.agent-closed summary::before,
+    details.manager-processed summary::before { content: '▸ '; }
+    details.agent-closed[open] summary::before,
+    details.manager-processed[open] summary::before { content: '▾ '; }
+
+    .lead-card--processed { border-style: dashed; opacity: 0.98; }
+    #processedCards .lead-card { margin-top: 10px; }
+    #processedCards .lead-card:first-child { margin-top: 0; }
+
+    /* Dialogs */
+    .filters-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; align-items: center; }
+    .chip {
+      padding: 7px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.12s;
+    }
+    .chip:hover { background: var(--bg-page); }
+    .chip.active { background: var(--accent-light); border-color: var(--accent); color: #C2410C; font-weight: 500; }
+
+    .table-wrap { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: #F5F3EF;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    tbody td {
+      padding: 11px 14px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tbody tr { cursor: pointer; }
+    tbody tr:hover { background: var(--row-hover); }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .tag { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
+    .tag-hot { background: var(--hot-bg); color: var(--hot-text); }
+    .tag-reg { background: var(--region-bg); color: var(--region-text); }
+    .tag-info { background: var(--muted-bg); color: var(--text-secondary); }
+    .tag-urg { background: var(--urgent-bg); color: var(--urgent-text); }
+
+    /* Analytics */
+    .funnel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+    }
+    .funnel-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+    .funnel-top span { color: var(--text-secondary); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+    .funnel-top b { color: var(--text-primary); font-size: 14px; }
+    .funnel-group {
+      margin-top: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .funnel-group:last-of-type { border-bottom: none; padding-bottom: 0; }
+    .funnel-row,
+    .funnel-child-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 56px 52px;
+      column-gap: 14px;
+      align-items: baseline;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .funnel-row .funnel-label { font-weight: 600; color: var(--text-primary); min-width: 0; }
+    .funnel-row .funnel-val,
+    .funnel-row .funnel-pct { font-variant-numeric: tabular-nums; }
+    .funnel-row .funnel-val { font-weight: 600; text-align: right; }
+    .funnel-row .funnel-pct { color: var(--text-secondary); font-weight: 500; text-align: right; }
+    .funnel-children {
+      margin-top: 6px;
+      padding: 8px 10px 2px;
+      background: #F7F5F2;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .funnel-child-row .funnel-label {
+      font-weight: 500;
+      color: var(--text-secondary);
+      padding-left: 10px;
+      border-left: 3px solid var(--border);
+      margin-left: 2px;
+      min-width: 0;
+    }
+    .funnel-child-row .funnel-val,
+    .funnel-child-row .funnel-pct { font-variant-numeric: tabular-nums; }
+    .funnel-child-row .funnel-val { font-weight: 600; text-align: right; }
+    .funnel-child-row .funnel-pct { color: var(--text-secondary); font-weight: 500; text-align: right; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 16px; }
+    .stat-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+    .stat-card h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-secondary); margin-bottom: 10px; }
+    .stat-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+    .stat-row:last-child { border-bottom: none; }
+
+    /* Settings */
+    .settings-block { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; }
+    .settings-block h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+    .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13px; }
+    .settings-row:first-of-type { border-top: none; padding-top: 0; }
+    .handoff-note { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-top: 10px; padding: 10px 12px; background: var(--bg-page); border-radius: 8px; border: 1px dashed var(--border); }
+
+    /* Detail panels */
+    .lead-detail { display: none; flex-direction: column; flex: 1; min-height: 0; background: var(--bg-page); }
+    .lead-detail.open { display: flex; }
+
+    .lead-detail-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      margin-bottom: 12px;
+    }
+    .lead-detail-back:hover { color: var(--text-primary); }
+
+    .lead-detail-title { font-size: 20px; font-weight: 600; }
+    .lead-detail-sub { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+    .lead-detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+
+    .mode-banner { display: none; align-items: center; gap: 10px; padding: 10px 14px; background: var(--accent-light); border: 1px solid var(--accent); border-radius: 10px; margin-bottom: 16px; font-size: 13px; }
+    .mode-banner.visible { display: flex; }
+
+    .chat-log { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; max-height: 420px; overflow-y: auto; margin-bottom: 16px; }
+    .msg { margin-bottom: 14px; font-size: 13px; line-height: 1.5; display: flex; gap: 10px; align-items: flex-start; }
+    .msg time { font-size: 11px; color: var(--text-disabled); min-width: 56px; }
+
+    .whoAvatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+      border: 1px solid transparent;
+      color: inherit;
+    }
+    .whoAvatar svg { width: 14px; height: 14px; }
+    .whoAvatar.user { background: #EFF6FF; border-color: #C7D2FE; color: #1D4ED8; }
+    .whoAvatar.bot { background: #F5F3FF; border-color: #DDD6FE; color: #7C3AED; }
+
+    .detail-section { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+    .detail-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 8px; }
+    .detail-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; border: 1px solid var(--border); background: var(--bg-surface); cursor: pointer; font-family: inherit; color: var(--text-primary); transition: background 0.12s, border-color 0.12s, color 0.12s; }
+    .btn:hover { background: var(--bg-page); }
+    .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-accent:hover { background: var(--accent-hover); }
+    .btn-danger { background: #B91C1C; color: #fff; border-color: #B91C1C; }
+    .btn-danger:hover { background: #991B1B; }
+
+    /* Modal (как в index.html) */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      z-index: var(--z-modal);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--bg-surface);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
+      animation: modalIn 0.2s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .modal-icon {
+      width: 40px;
+      height: 40px;
+      background: #FEF2F2;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      color: #B91C1C;
+    }
+    .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .modal-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px; }
+    .modal-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+
+    .toast-container { position: fixed; bottom: 22px; right: 22px; z-index: var(--z-toast); display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: #1A1A1A; color: #fff; padding: 11px 16px; border-radius: 8px; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); animation: tIn 0.2s ease; }
+    @keyframes tIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Мобильная адаптация */
+    @media (max-width: 900px) {
+      .mobile-menu-btn { display: inline-flex; }
+
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.24s ease;
+        max-width: min(280px, 88vw);
+      }
+      .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 12px 0 40px rgba(0, 0, 0, 0.14);
+      }
+
+      .main { margin-left: 0; }
+
+      .int-bar {
+        padding: 10px 14px;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+      }
+      .int-bar-left {
+        flex: 1;
+        min-width: 0;
+        align-items: center;
+        gap: 8px 12px;
+      }
+      .int-title { font-size: 14px; }
+      .int-statuses {
+        flex: 1;
+        min-width: 0;
+        flex-wrap: wrap;
+        gap: 10px 14px;
+        justify-content: flex-end;
+      }
+      .int-time { font-size: 12px; margin-left: auto; }
+
+      .content { padding: 14px 14px 28px; }
+
+      .counters { gap: 8px 14px; margin-bottom: 16px; font-size: 13px; }
+
+      .filters-bar { gap: 6px; }
+      .filters-hint {
+        width: 100%;
+        margin-left: 0 !important;
+        margin-top: 4px;
+        font-size: 12px !important;
+        line-height: 1.35;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 10px;
+      }
+      .table-wrap table { min-width: 520px; }
+      thead th,
+      tbody td { padding: 9px 10px; font-size: 12px; }
+
+      .funnel { padding: 14px 12px; }
+      .funnel-row,
+      .funnel-child-row {
+        grid-template-columns: minmax(0, 1fr) 48px 46px;
+        column-gap: 10px;
+        font-size: 12px;
+      }
+
+      .stat-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .settings-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .settings-row > span:first-child { padding-right: 0; }
+
+      .lead-detail-head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .chat-log {
+        max-height: min(420px, 52vh);
+        padding: 12px 14px;
+      }
+
+      .msg { gap: 8px; font-size: 12px; }
+      .msg time { min-width: 48px; }
+
+      .detail-actions { flex-direction: column; }
+      .detail-actions .btn { width: 100%; justify-content: center; }
+
+      .toast-container {
+        left: max(12px, env(safe-area-inset-left));
+        right: max(12px, env(safe-area-inset-right));
+        bottom: max(12px, env(safe-area-inset-bottom));
+      }
+
+      .content {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+      }
+      .lead-detail.open {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+      }
+    }
+
+    @media (max-width: 480px) {
+      .int-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .int-bar-left { width: 100%; }
+      .int-time { align-self: flex-end; font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-mark" aria-hidden="true">◇</div>
+      <div class="sidebar-brand-text">Здравница AI</div>
+    </div>
+    <nav class="sidebar-nav">
+      <button type="button" class="nav-item active" data-view="queue" onclick="setView('queue')">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h8"/></svg>
+        Очередь сегодня
+      </button>
+      <button type="button" class="nav-item" data-view="dialogs" onclick="setView('dialogs')">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+        Все диалоги
+      </button>
+      <button type="button" class="nav-item" data-view="analytics" onclick="setView('analytics')">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 19V5"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 19h16"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 15l4-4 4 2 5-7"/></svg>
+        Аналитика
+      </button>
+      <button type="button" class="nav-item" data-view="settings" onclick="setView('settings')">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Настройки агента
+      </button>
+    </nav>
+  </aside>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true" onclick="toggleSidebar(false)"></div>
+
+  <main class="main">
+    <div class="int-bar">
+      <div class="int-bar-left">
+        <button type="button" class="mobile-menu-btn" aria-label="Меню навигации" aria-expanded="false" id="sidebarMenuBtn" onclick="toggleSidebar()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <span class="int-title">Операционная панель</span>
+        <div class="int-statuses" role="group" aria-label="Интеграции (демо)">
+          <span class="int-chip" title="Подключено (демо)"><span class="int-dot int-dot--ok" aria-hidden="true"></span><span class="int-name">n8n</span></span>
+          <span class="int-chip" title="Подключено (демо)"><span class="int-dot int-dot--ok" aria-hidden="true"></span><span class="int-name">Supabase</span></span>
+          <span class="int-chip" title="Подключено (демо)"><span class="int-dot int-dot--ok" aria-hidden="true"></span><span class="int-name">Битрикс24</span></span>
+        </div>
+      </div>
+      <span class="int-time" id="clock">—:—</span>
+    </div>
+
+    <div class="content" id="mainStack">
+      <div id="panelViews">
+        <!-- Очередь -->
+        <div class="view active" id="view-queue">
+          <div class="counters">
+            <span class="cnt-item"><span class="state-dot state-dot-urgent" aria-hidden="true"></span>Срочно <b>(2)</b></span>
+            <span class="cnt-item"><span class="state-dot state-dot-wait" aria-hidden="true"></span>Ждут звонка <b>(5)</b></span>
+            <span class="cnt-item"><span class="state-dot state-dot-region" aria-hidden="true"></span>Регионы <b>(3)</b></span>
+            <span class="cnt-item"><span class="state-dot state-dot-closed" aria-hidden="true"></span>Агент закрыл <b>(21)</b></span>
+          </div>
+
+          <div class="section-title">Требуют действия сейчас</div>
+          <div class="queue-section" id="queueSectionNow">
+          <div class="lead-card" data-lead="emergency" data-queue-group="queueSectionNow" data-queue-order="0" onclick="openLead('emergency')">
+            <div class="lead-card__head">
+              <div class="lead-card__badge urgent"><span class="lead-dot lead-dot-urgent" aria-hidden="true"></span>ЭКСТРЕННО</div>
+              <button type="button" class="lead-card-dismiss" title="Убрать из очереди — в обработанные" aria-label="В обработанные" onclick="requestMarkProcessed(event)">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </button>
+              <button type="button" class="lead-card-restore" title="Вернуть в очередь" aria-label="Вернуть в очередь" onclick="requestRestoreLead(event)">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h11a4 4 0 014 4v2M3 10l5 5M3 10l5-5"/></svg>
+              </button>
+            </div>
+            <div class="lead-card__meta">Неизвестен · +7 916 ··· · 03:24</div>
+            <div class="lead-card__snippet">«муж не дышит нормально»</div>
+            <div class="lead-card__note">Выездной уведомлён в 03:24</div>
+            <div class="lead-actions" onclick="event.stopPropagation()">
+              <button type="button" class="btn-sm primary" onclick="toast('Исходящий вызов (демо)')">Позвонить</button>
+              <button type="button" class="btn-sm" onclick="toast('История (демо)')">История</button>
+            </div>
+          </div>
+
+          <div class="lead-card" data-lead="anna" data-queue-group="queueSectionNow" data-queue-order="1" onclick="openLead('anna')">
+            <div class="lead-card__head">
+              <div class="lead-card__badge hot"><span class="lead-dot lead-dot-hot" aria-hidden="true"></span>ГОРЯЧИЙ · Ждёт звонка</div>
+              <button type="button" class="lead-card-dismiss" title="Убрать из очереди — в обработанные" aria-label="В обработанные" onclick="requestMarkProcessed(event)">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </button>
+              <button type="button" class="lead-card-restore" title="Вернуть в очередь" aria-label="Вернуть в очередь" onclick="requestRestoreLead(event)">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h11a4 4 0 014 4v2M3 10l5 5M3 10l5-5"/></svg>
+              </button>
+            </div>
+            <div class="lead-card__meta">Анна С. · +7 926 ··· · вчера 21:34</div>
+            <div class="lead-card__snippet">«муж трое суток в запое, готова к выезду»</div>
+            <div class="lead-card__note">Агент: контакт собран, PDF отправлен</div>
+            <div class="lead-actions" onclick="event.stopPropagation()">
+              <button type="button" class="btn-sm primary" onclick="toast('Позвонить (демо)')">Позвонить</button>
+              <button type="button" class="btn-sm" onclick="toast('TG (демо)')">Написать</button>
+              <button type="button" class="btn-sm" onclick="event.stopPropagation(); openLead('anna'); setTimeout(connectHuman, 80)">Подключиться</button>
+              <button type="button" class="btn-sm" onclick="toast('PDF (демо)')">PDF</button>
+            </div>
+          </div>
+          </div>
+
+          <div class="section-title">Договорились на время</div>
+          <div class="queue-section" id="queueSectionScheduled">
+          <div class="lead-card" data-lead="igor" data-queue-group="queueSectionScheduled" data-queue-order="0" onclick="openLead('igor')">
+            <div class="lead-card__head">
+              <div class="lead-card__badge wait"><span class="lead-dot lead-dot-wait" aria-hidden="true"></span>Звонок в 10:00 · через 28 мин</div>
+              <button type="button" class="lead-card-dismiss" title="Убрать из очереди — в обработанные" aria-label="В обработанные" onclick="requestMarkProcessed(event)">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </button>
+              <button type="button" class="lead-card-restore" title="Вернуть в очередь" aria-label="Вернуть в очередь" onclick="requestRestoreLead(event)">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h11a4 4 0 014 4v2M3 10l5 5M3 10l5-5"/></svg>
+              </button>
+            </div>
+            <div class="lead-card__meta">Игорь М. · +7 903 ··· · вчера 22:11</div>
+            <div class="lead-card__snippet">«сын употребляет год, хотим поговорить»</div>
+            <div class="lead-actions" onclick="event.stopPropagation()">
+              <button type="button" class="btn-sm primary" onclick="toast('Позвонить (демо)')">Позвонить</button>
+              <button type="button" class="btn-sm" onclick="openLead('igor')">История</button>
+              <button type="button" class="btn-sm" onclick="toast('PDF (демо)')">PDF</button>
+            </div>
+          </div>
+          </div>
+
+          <div class="section-title">Регионы</div>
+          <div class="queue-section" id="queueSectionRegion">
+          <div class="lead-card" data-lead="dmitry" data-queue-group="queueSectionRegion" data-queue-order="0" onclick="openLead('dmitry')">
+            <div class="lead-card__head">
+              <div class="lead-card__badge region"><span class="lead-dot lead-dot-region" aria-hidden="true"></span>Онлайн-консультация</div>
+              <button type="button" class="lead-card-dismiss" title="Убрать из очереди — в обработанные" aria-label="В обработанные" onclick="requestMarkProcessed(event)">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </button>
+              <button type="button" class="lead-card-restore" title="Вернуть в очередь" aria-label="Вернуть в очередь" onclick="requestRestoreLead(event)">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h11a4 4 0 014 4v2M3 10l5 5M3 10l5-5"/></svg>
+              </button>
+            </div>
+            <div class="lead-card__meta">Дмитрий · Казань · вчера 20:44</div>
+            <div class="lead-card__snippet">«реабилитация онлайн возможна?»</div>
+            <div class="lead-actions" onclick="event.stopPropagation()">
+              <button type="button" class="btn-sm" onclick="toast('Чат (демо)')">Написать</button>
+              <button type="button" class="btn-sm" onclick="openLead('dmitry')">История</button>
+            </div>
+          </div>
+          </div>
+
+          <details class="manager-processed" id="processedSection">
+            <summary>Обработанные менеджером (<span id="processedCount">0</span>) — развернуть</summary>
+            <div id="processedCards"></div>
+          </details>
+
+          <details class="agent-closed">
+            <summary>Закрыл агент (21) — развернуть</summary>
+            <div class="lead-card" style="margin-top:10px;cursor:default" onclick="openLead('anon')">
+              <div class="lead-card__badge muted"><span class="lead-dot lead-dot-muted" aria-hidden="true"></span>Аноним · Инфо · 19:30 · narcorehab.com</div>
+              <div class="lead-card__note">Тема: общий вопрос по программе · 4 сообщения · ушёл</div>
+              <div class="lead-actions">
+                <button type="button" class="btn-sm" onclick="event.stopPropagation(); openLead('anon')">История</button>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <!-- Диалоги -->
+        <div class="view" id="view-dialogs">
+          <div class="filters-bar">
+            <button type="button" class="chip active" data-df="all" onclick="setDialogFilter('all')">Все</button>
+            <button type="button" class="chip" data-df="hot" onclick="setDialogFilter('hot')">Горячие</button>
+            <button type="button" class="chip" data-df="region" onclick="setDialogFilter('region')">Регионы</button>
+            <button type="button" class="chip" data-df="info" onclick="setDialogFilter('info')">Инфо</button>
+            <button type="button" class="chip" data-df="urgent" onclick="setDialogFilter('urgent')">Экстренные</button>
+            <span class="filters-hint" style="margin-left:auto;font-size:13px;color:var(--text-secondary)">Демо-фильтр по типу сессии</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Время</th>
+                  <th>Тип</th>
+                  <th>Источник</th>
+                  <th>Контакт</th>
+                  <th>Кратко</th>
+                </tr>
+              </thead>
+              <tbody id="dialogRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Аналитика -->
+        <div class="view" id="view-analytics">
+          <div class="funnel">
+            <!-- UI: воронка в разметке -->
+            <div class="funnel-top">
+              <span>Всего сессий</span>
+              <b>847</b>
+            </div>
+            <div class="funnel-group">
+              <div class="funnel-row">
+                <span class="funnel-label">Информационные</span>
+                <span class="funnel-val">423</span>
+                <span class="funnel-pct">(50%)</span>
+              </div>
+              <div class="funnel-children">
+                <div class="funnel-child-row">
+                  <span class="funnel-label">дали контакт</span>
+                  <span class="funnel-val">63</span>
+                  <span class="funnel-pct">(15%)</span>
+                </div>
+              </div>
+            </div>
+            <div class="funnel-group">
+              <div class="funnel-row">
+                <span class="funnel-label">Регионы</span>
+                <span class="funnel-val">187</span>
+                <span class="funnel-pct">(22%)</span>
+              </div>
+              <div class="funnel-children">
+                <div class="funnel-child-row">
+                  <span class="funnel-label">онлайн-конс.</span>
+                  <span class="funnel-val">41</span>
+                  <span class="funnel-pct">(22%)</span>
+                </div>
+              </div>
+            </div>
+            <div class="funnel-group">
+              <div class="funnel-row">
+                <span class="funnel-label">Горячие МСК</span>
+                <span class="funnel-val">198</span>
+                <span class="funnel-pct">(23%)</span>
+              </div>
+              <div class="funnel-children">
+                <div class="funnel-child-row">
+                  <span class="funnel-label">дали контакт</span>
+                  <span class="funnel-val">181</span>
+                  <span class="funnel-pct">(91%)</span>
+                </div>
+              </div>
+            </div>
+            <div class="funnel-group">
+              <div class="funnel-row">
+                <span class="funnel-label">Экстренные</span>
+                <span class="funnel-val">39</span>
+                <span class="funnel-pct">(5%)</span>
+              </div>
+              <div class="funnel-children">
+                <div class="funnel-child-row">
+                  <span class="funnel-label">выезд</span>
+                  <span class="funnel-val">39</span>
+                  <span class="funnel-pct">(100%)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <h4>Где агент не дожимает (инфо)</h4>
+              <div class="stat-row"><span>После первого уточняющего ответа</span><span>38%</span></div>
+              <div class="stat-row"><span>После 3-го сообщения</span><span>24%</span></div>
+              <div class="stat-row"><span>После обсуждения выезда</span><span>19%</span></div>
+              <div class="stat-row"><span>После вопроса о документах</span><span>12%</span></div>
+            </div>
+            <div class="stat-card">
+              <h4>Тематики без конверсии (топ)</h4>
+              <div class="stat-row"><span>1. Программа и сроки</span><span>187</span></div>
+              <div class="stat-row"><span>2. Анонимность и документы</span><span>143</span></div>
+              <div class="stat-row"><span>3. Формат помощи на дому</span><span>98</span></div>
+            </div>
+            <div class="stat-card">
+              <h4>По источникам</h4>
+              <div class="stat-row"><span>narcorehab.com</span><span>312 · 18% конв.</span></div>
+              <div class="stat-row"><span>Сайт 2</span><span>198 · 22%</span></div>
+              <div class="stat-row"><span>Сайт 3</span><span>156 · 14%</span></div>
+              <div class="stat-row"><span>Сайт 4</span><span>98 · 11%</span></div>
+              <div class="stat-row"><span>Сайт 5</span><span>83 · 19%</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Настройки -->
+        <div class="view" id="view-settings">
+          <div class="settings-block">
+            <h3>База знаний</h3>
+            <div class="settings-row">
+              <span>Обновлена: 3 дня назад</span>
+              <div>
+                <button type="button" class="btn-sm" onclick="toast('Редактор (демо)')">Редактировать</button>
+                <button type="button" class="btn-sm" onclick="toast('Загрузка (демо)')">Загрузить файл</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-block">
+            <h3>Промпты</h3>
+            <div class="settings-row"><span>Классификатор</span><button type="button" class="btn-sm" onclick="toast('Редактировать')">Редактировать</button></div>
+            <div class="settings-row"><span>Мила · чат</span><button type="button" class="btn-sm" onclick="toast('Редактировать')">Редактировать</button></div>
+            <div class="settings-row"><span>Мила · перехват</span><button type="button" class="btn-sm" onclick="toast('Редактировать')">Редактировать</button></div>
+            <div class="settings-row"><span>Экстренный сценарий</span><button type="button" class="btn-sm" onclick="toast('Редактировать')">Редактировать</button></div>
+          </div>
+          <div class="settings-block">
+            <h3>Пороги классификации</h3>
+            <div class="settings-row"><span>Экстренные маркеры</span><button type="button" class="btn-sm" onclick="toast('Редактировать')">Редактировать</button></div>
+            <div class="settings-row"><span>Горячие маркеры</span><button type="button" class="btn-sm" onclick="toast('Редактировать')">Редактировать</button></div>
+            <div class="settings-row"><span>Регион / МСК</span><button type="button" class="btn-sm" onclick="toast('Редактировать')">Редактировать</button></div>
+          </div>
+          <div class="settings-block">
+            <h3>Уведомления</h3>
+            <div class="settings-row"><span>Telegram дежурного</span><span>@demo_duty ✓</span></div>
+            <div class="settings-row"><span>Telegram выездного</span><span>@demo_field ✓</span></div>
+            <div class="settings-row"><span>Системные алерты</span><span>@demo_admin ✓</span></div>
+            <p class="handoff-note"><b>Human handoff:</b> в Supabase поле <code>mode</code>: <code>bot</code> — отвечает Мила, <code>human</code> — менеджер из панели, <code>hybrid</code> — оба видят историю. После разговора — «Вернуть боту» в карточке лида.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Детализация диалога -->
+      <div class="lead-detail" id="dialogDetail">
+        <button type="button" class="lead-detail-back" onclick="closeDialog()">← Назад</button>
+        <div id="dialogDetailInner"></div>
+      </div>
+
+      <!-- Карточка лида -->
+      <div class="lead-detail" id="leadDetail">
+        <button type="button" class="lead-detail-back" onclick="closeLead()">← Назад</button>
+        <div id="leadDetailInner"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- UI: подтверждение переноса / возврата карточки (паттерн как в index.html) -->
+  <div class="modal-overlay" id="leadModalOverlay" role="presentation">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="leadModalTitle" aria-describedby="leadModalDesc" onclick="event.stopPropagation()">
+      <div class="modal-icon" aria-hidden="true">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </div>
+      <div class="modal-title" id="leadModalTitle">Подтвердите действие</div>
+      <div class="modal-desc" id="leadModalDesc"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn" onclick="closeLeadModal()">Назад</button>
+        <button type="button" class="btn btn-accent" id="leadModalConfirm" onclick="confirmLeadModal()">Подтвердить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toasts"></div>
+
+  <script>
+    // Demo chat rows and lead history (no backend)
+    const DIALOG_ROWS = [
+      {
+        id: 'dr1',
+        t: 'вчера 21:34',
+        cls: 'hot',
+        dotClass: 'hot',
+        src: 'narcorehab.com',
+        c: 'Анна С.',
+        s: 'Горячий · запой, выезд',
+        type: 'hot',
+        messages: [
+          ['21:15', 'user', 'муж третьи сутки в запое не могу ничего сделать'],
+          ['21:15', 'bot', 'Понимаю, как это тяжело — особенно когда рядом и помочь не получается. Он сейчас дома?'],
+          ['21:18', 'user', 'да дома, но агрессивный'],
+          ['21:19', 'bot', 'Выезд специалиста на дом возможен сегодня ночью — врач приедет мягко. Как вас зовут?'],
+          ['21:34', 'user', 'Анна, телефон +7 926 xxx'],
+          ['21:35', 'bot', 'Записала вас. Специалист свяжется до 10:00. PDF с ориентиром уже в Telegram.'],
+        ],
+      },
+      {
+        id: 'dr2',
+        t: 'вчера 22:11',
+        cls: 'hot',
+        dotClass: 'wait',
+        src: 'narcorehab.com',
+        c: 'Игорь М.',
+        s: 'Договор: звонок 10:00',
+        type: 'hot',
+        messages: [
+          ['22:11', 'user', 'сын употребляет год, хотим поговорить'],
+          ['22:12', 'bot', 'Здравствуйте. Расскажите коротко — в каком городе вы сейчас?'],
+          ['22:14', 'user', 'Москва'],
+          ['22:20', 'bot', 'Удобно, если специалист позвонит в 10:00?'],
+          ['22:21', 'user', 'да'],
+          ['22:22', 'bot', 'Зафиксировала. Утром напомним перед звонком.'],
+        ],
+      },
+      {
+        id: 'dr3',
+        t: 'вчера 20:44',
+        cls: 'reg',
+        dotClass: 'region',
+        src: 'Сайт 2',
+        c: 'Дмитрий',
+        s: 'Регион · онлайн',
+        type: 'region',
+        messages: [
+          ['20:44', 'user', 'реабилитация онлайн возможна?'],
+          ['20:45', 'bot', 'Да, онлайн-формат доступен для вашего региона. Оставьте удобный мессенджер — коллега свяжется.'],
+          ['20:50', 'user', 'Telegram тот же номер'],
+          ['20:51', 'bot', 'Передала в воронку «Регионы».'],
+        ],
+      },
+      {
+        id: 'dr4',
+        t: 'вчера 19:30',
+        cls: 'info',
+        dotClass: 'muted',
+        src: 'narcorehab.com',
+        c: '—',
+        s: 'Инфо · ушёл на 4-м',
+        type: 'info',
+        messages: [
+          ['19:28', 'user', 'Здравствуйте, подскажите по программе'],
+          ['19:28', 'bot', 'Здравствуйте. Кратко опишите ситуацию — для себя или близкого?'],
+          ['19:29', 'user', 'просто интересуюсь'],
+          ['19:30', 'bot', 'Если захотите продолжить — чат сохранится. Хорошего вечера.'],
+        ],
+      },
+      {
+        id: 'dr5',
+        t: 'сегодня 03:24',
+        cls: 'urg',
+        dotClass: 'urgent',
+        src: 'Сайт 3',
+        c: '—',
+        s: 'Экстренно · дыхание',
+        type: 'urgent',
+        messages: [
+          ['03:24', 'user', 'муж не дышит нормально'],
+          ['03:24', 'bot', 'Соединяю с дежурным врачом — перезвонят в течение 5 минут. Адрес и ФИО уже переданы выездной бригаде.'],
+        ],
+      },
+    ];
+
+    const LEADS = {
+      anna: {
+        title: 'Анна Смирнова',
+        badge: 'ГОРЯЧИЙ · Ждёт звонка',
+        badgeClass: 'hot',
+        phone: '+7 926 xxx xxx',
+        meta: 'Источник: narcorehab.com · виджет · Вошла: 21:15 | Контакт: 21:34 | PDF: 21:36 → TG ✓',
+        messages: [
+          ['21:15', 'user', 'муж третьи сутки в запое не могу ничего сделать'],
+          ['21:15', 'bot', 'Понимаю, как это тяжело — особенно когда рядом и помочь не получается. Он сейчас дома?'],
+          ['21:18', 'user', 'да дома, но агрессивный'],
+          ['21:19', 'bot', 'Выезд специалиста на дом возможен сегодня ночью — врач приедет мягко. Как вас зовут?'],
+          ['21:34', 'user', 'Анна, телефон +7 926 xxx'],
+          ['21:35', 'bot', 'Записала вас. Специалист свяжется до 10:00. PDF с ориентиром уже в Telegram.'],
+        ],
+        bitrix: 'Лид: 21:34 · Воронка: Горячие МСК · Ответственный: не назначен',
+      },
+      igor: {
+        title: 'Игорь М.',
+        badge: 'Договорились на 10:00',
+        badgeClass: 'wait',
+        phone: '+7 903 xxx xxx',
+        meta: 'Источник: narcorehab.com · виджет · Ночной сценарий',
+        messages: [
+          ['22:11', 'user', 'сын употребляет год, хотим поговорить'],
+          ['22:12', 'bot', 'Здравствуйте. Расскажите коротко — в каком городе вы сейчас?'],
+          ['22:14', 'user', 'Москва'],
+          ['22:20', 'bot', 'Удобно, если специалист позвонит в 10:00?'],
+          ['22:21', 'user', 'да'],
+          ['22:22', 'bot', 'Зафиксировала. Утром напомним перед звонком.'],
+        ],
+        bitrix: 'Лид · Статус: договорились на 10:00 · PDF отправлен',
+      },
+      dmitry: {
+        title: 'Дмитрий',
+        badge: 'Регион · онлайн',
+        badgeClass: 'region',
+        phone: 'Казань · контакт в CRM',
+        meta: 'Источник: Сайт 2 · виджет',
+        messages: [
+          ['20:44', 'user', 'реабилитация онлайн возможна?'],
+          ['20:45', 'bot', 'Да, онлайн-формат доступен для вашего региона. Оставьте удобный мессенджер — коллега свяжется.'],
+          ['20:50', 'user', 'Telegram тот же номер'],
+          ['20:51', 'bot', 'Передала в воронку «Регионы».'],
+        ],
+        bitrix: 'Лид в воронке «Регионы»',
+      },
+      emergency: {
+        title: 'Экстренное обращение',
+        badge: 'ЭКСТРЕННО',
+        badgeClass: 'urgent',
+        phone: '+7 916 xxx',
+        meta: 'Источник: Сайт 3 · 03:24 · Выездной уведомлён',
+        messages: [
+          ['03:24', 'user', 'муж не дышит нормально'],
+          ['03:24', 'bot', 'Соединяю с дежурным врачом — перезвонят в течение 5 минут. Адрес и ФИО уже переданы выездной бригаде.'],
+        ],
+        bitrix: 'Лид · Статус: ЭКСТРЕННО · Уведомление дежурным',
+      },
+      anon: {
+        title: 'Аноним · сессия',
+        badge: 'Инфо · без контакта',
+        badgeClass: 'muted',
+        phone: '—',
+        meta: 'narcorehab.com · 19:30 · 4 сообщения · ушёл',
+        messages: [
+          ['19:28', 'user', 'Здравствуйте, подскажите по программе'],
+          ['19:28', 'bot', 'Здравствуйте. Кратко опишите ситуацию — для себя или близкого?'],
+          ['19:29', 'user', 'просто интересуюсь'],
+          ['19:30', 'bot', 'Если захотите продолжить — чат сохранится. Хорошего вечера.'],
+        ],
+        bitrix: 'В Битрикс не передавалось · аналитика в Supabase',
+      },
+    };
+
+    let dialogFilter = 'all';
+    let humanMode = false;
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function toast(msg) {
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.textContent = msg;
+      document.getElementById('toasts').appendChild(el);
+      setTimeout(() => el.remove(), 2800);
+    }
+
+    function tickClock() {
+      const d = new Date();
+      document.getElementById('clock').textContent = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    }
+    setInterval(tickClock, 1000);
+    tickClock();
+
+    function toggleSidebar(open) {
+      const sidebar = document.querySelector('.sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      const menuBtn = document.getElementById('sidebarMenuBtn');
+      if (!sidebar || !backdrop) return;
+      const mq = window.matchMedia('(max-width: 900px)');
+      if (!mq.matches) {
+        sidebar.classList.remove('open');
+        backdrop.classList.remove('visible');
+        document.body.classList.remove('no-scroll');
+        if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+        return;
+      }
+      const next = open === true ? true : open === false ? false : !sidebar.classList.contains('open');
+      sidebar.classList.toggle('open', next);
+      backdrop.classList.toggle('visible', next);
+      document.body.classList.toggle('no-scroll', next);
+      backdrop.setAttribute('aria-hidden', next ? 'false' : 'true');
+      if (menuBtn) menuBtn.setAttribute('aria-expanded', next ? 'true' : 'false');
+    }
+
+    window.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      const lm = document.getElementById('leadModalOverlay');
+      if (lm && lm.classList.contains('open')) {
+        closeLeadModal();
+        return;
+      }
+      toggleSidebar(false);
+    });
+
+    window.addEventListener('resize', function () {
+      if (!window.matchMedia('(max-width: 900px)').matches) toggleSidebar(false);
+    });
+
+    // SVG avatars: no base emoji human/robot
+    function userAvatarSvg() {
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 21a8 8 0 0 0-16 0"></path>
+        <path d="M12 13a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 13z"></path>
+      </svg>`;
+    }
+    function botAvatarSvg() {
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3v2"></path>
+        <path d="M9 5h6"></path>
+        <rect x="7" y="7" width="10" height="13" rx="3"></rect>
+        <path d="M10 14h.01"></path>
+        <path d="M14 14h.01"></path>
+      </svg>`;
+    }
+    function avatarHtml(who) {
+      const svg = who === 'user' ? userAvatarSvg() : botAvatarSvg();
+      return `<span class="whoAvatar ${who}" aria-hidden="true">${svg}</span>`;
+    }
+    function renderChatMessages(messages) {
+      return messages.map(([time, who, text]) => {
+        return `<div class="msg ${who}"><time>${escapeHtml(time)}</time>${avatarHtml(who)}<span>${escapeHtml(text)}</span></div>`;
+      }).join('');
+    }
+
+    function closeLead() {
+      document.getElementById('leadDetail').classList.remove('open');
+      document.getElementById('panelViews').style.display = '';
+      humanMode = false;
+    }
+
+    function closeDialog() {
+      document.getElementById('dialogDetail').classList.remove('open');
+      document.getElementById('panelViews').style.display = '';
+      humanMode = false;
+    }
+
+    function setView(name) {
+      document.querySelectorAll('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+      document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+      closeLead();
+      closeDialog();
+      toggleSidebar(false);
+    }
+
+    function connectHuman() {
+      humanMode = true;
+      const b = document.getElementById('modeBanner');
+      const r = document.getElementById('btnReturnBot');
+      const c = document.getElementById('btnConnect');
+      if (b) b.classList.add('visible');
+      if (r) r.style.display = 'inline-flex';
+      if (c) c.style.display = 'none';
+      toast('Режим: human — ответы из панели (демо)');
+    }
+
+    function returnBot() {
+      humanMode = false;
+      const b = document.getElementById('modeBanner');
+      const r = document.getElementById('btnReturnBot');
+      const c = document.getElementById('btnConnect');
+      if (b) b.classList.remove('visible');
+      if (r) r.style.display = 'none';
+      if (c) c.style.display = 'inline-flex';
+      toast('Мила снова ведёт диалог (демо)');
+    }
+
+    function openLead(id) {
+      const L = LEADS[id];
+      if (!L) return;
+      humanMode = false;
+      closeDialog();
+      toggleSidebar(false);
+      document.getElementById('panelViews').style.display = 'none';
+      document.getElementById('leadDetail').classList.add('open');
+
+      const inner = document.getElementById('leadDetailInner');
+      const msgs = renderChatMessages(L.messages);
+
+      inner.innerHTML = `
+        <div class="lead-detail-head">
+          <div>
+            <div class="lead-detail-title">${escapeHtml(L.title)}</div>
+            <div class="lead-detail-sub">${escapeHtml(L.phone)}</div>
+            <div class="lead-detail-sub" style="margin-top:6px">${escapeHtml(L.meta)}</div>
+          </div>
+          <div class="lead-card__badge ${L.badgeClass}" style="margin:0">
+            <span class="lead-dot lead-dot-${L.badgeClass}" aria-hidden="true"></span>${escapeHtml(L.badge)}
+          </div>
+        </div>
+        <div class="mode-banner" id="modeBanner">Режим: менеджер ведёт диалог. Клиент не теряет контекст.</div>
+        <div class="detail-section"><h4>История диалога</h4><div class="chat-log">${msgs}</div></div>
+        <div class="detail-section"><h4>PDF-ориентир</h4><p style="font-size:13px;color:var(--text-secondary)">Сгенерирован: 21:36 · Отправлен: Telegram ✓</p><button type="button" class="btn" onclick="toast('Скачать PDF (демо)')">Скачать PDF</button></div>
+        <div class="detail-section"><h4>Статус в Битрикс24</h4><p style="font-size:13px">${escapeHtml(L.bitrix)}</p><button type="button" class="btn" onclick="toast('Открытие CRM (демо)')">Открыть в Битрикс →</button></div>
+        <div class="detail-actions">
+          <button type="button" class="btn btn-accent" onclick="toast('Звонок (демо)')">Позвонить</button>
+          <button type="button" class="btn" onclick="toast('Telegram (демо)')">Написать в TG</button>
+          <button type="button" class="btn" id="btnConnect" onclick="connectHuman()">Подключиться</button>
+          <button type="button" class="btn" id="btnReturnBot" style="display:none" onclick="returnBot()">Вернуть боту</button>
+          <button type="button" class="btn" onclick="toast('Назначение (демо)')">Назначить</button>
+        </div>
+      `;
+
+      document.getElementById('modeBanner').classList.remove('visible');
+      document.getElementById('btnReturnBot').style.display = 'none';
+    }
+
+    function openDialog(id) {
+      const D = DIALOG_ROWS.find(r => r.id === id);
+      if (!D) return;
+      closeLead();
+      toggleSidebar(false);
+      document.getElementById('panelViews').style.display = 'none';
+      document.getElementById('dialogDetail').classList.add('open');
+
+      const inner = document.getElementById('dialogDetailInner');
+      const msgs = renderChatMessages(D.messages);
+      const dotCls = D.dotClass || 'muted';
+
+      inner.innerHTML = `
+        <div class="lead-detail-head" style="margin-bottom:14px">
+          <div>
+            <div class="lead-detail-title">${escapeHtml(D.c === '—' ? 'Сессия' : D.c)}</div>
+            <div class="lead-detail-sub" style="margin-top:6px">${escapeHtml(D.src)} · ${escapeHtml(D.t)}</div>
+            <div class="lead-detail-sub" style="margin-top:6px">${escapeHtml(D.s)}</div>
+          </div>
+          <div class="lead-card__badge ${dotCls}" style="margin:0">
+            <span class="lead-dot lead-dot-${dotCls}" aria-hidden="true"></span>${escapeHtml(D.s)}
+          </div>
+        </div>
+        <div class="detail-section"><h4>Диалог</h4><div class="chat-log">${msgs}</div></div>
+      `;
+    }
+
+    function setDialogFilter(f) {
+      dialogFilter = f;
+      document.querySelectorAll('#view-dialogs .chip').forEach(c => c.classList.toggle('active', c.dataset.df === f));
+      renderDialogRows();
+    }
+
+    function renderDialogRows() {
+      const tb = document.getElementById('dialogRows');
+      const rows = DIALOG_ROWS.filter(r => dialogFilter === 'all' || r.type === dialogFilter);
+      tb.innerHTML = rows.map(r => {
+        const tag = r.cls === 'hot' ? 'tag tag-hot' : r.cls === 'reg' ? 'tag tag-reg' : r.cls === 'urg' ? 'tag tag-urg' : 'tag tag-info';
+        const label = r.cls === 'hot' ? 'Горячий' : r.cls === 'reg' ? 'Регион' : r.cls === 'urg' ? 'Экстренный' : 'Инфо';
+        return `<tr onclick="openDialog('${r.id}')">
+          <td>${escapeHtml(r.t)}</td>
+          <td><span class="${tag}">${label}</span></td>
+          <td>${escapeHtml(r.src)}</td>
+          <td>${escapeHtml(r.c)}</td>
+          <td>${escapeHtml(r.s)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    const PROCESSED_STORAGE_KEY = 'zdravnica_queue_processed';
+    let pendingLeadModal = null;
+
+    function getProcessedIds() {
+      try {
+        const raw = sessionStorage.getItem(PROCESSED_STORAGE_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function setProcessedIds(ids) {
+      sessionStorage.setItem(PROCESSED_STORAGE_KEY, JSON.stringify([...new Set(ids)]));
+    }
+
+    function updateProcessedCount() {
+      const host = document.getElementById('processedCards');
+      const el = document.getElementById('processedCount');
+      if (!host || !el) return;
+      el.textContent = String(host.querySelectorAll('.lead-card').length);
+    }
+
+    function openLeadConfirmModal(type, card) {
+      pendingLeadModal = { type, card };
+      const title = document.getElementById('leadModalTitle');
+      const desc = document.getElementById('leadModalDesc');
+      const confirmBtn = document.getElementById('leadModalConfirm');
+      if (type === 'process') {
+        title.textContent = 'Убрать из очереди?';
+        desc.textContent = 'Карточка перейдёт в блок «Обработанные менеджером». Её можно снова открыть там или вернуть в очередь.';
+        confirmBtn.textContent = 'Да, в обработанные';
+        confirmBtn.className = 'btn btn-accent';
+      } else {
+        title.textContent = 'Вернуть в очередь?';
+        desc.textContent = 'Карточка снова появится в активной очереди в исходной секции.';
+        confirmBtn.textContent = 'Да, вернуть';
+        confirmBtn.className = 'btn btn-accent';
+      }
+      document.getElementById('leadModalOverlay').classList.add('open');
+    }
+
+    function closeLeadModal() {
+      const ov = document.getElementById('leadModalOverlay');
+      if (ov) ov.classList.remove('open');
+      pendingLeadModal = null;
+    }
+
+    function confirmLeadModal() {
+      if (!pendingLeadModal) return;
+      const payload = pendingLeadModal;
+      pendingLeadModal = null;
+      document.getElementById('leadModalOverlay').classList.remove('open');
+      if (payload.type === 'process') applyMarkProcessed(payload.card);
+      else applyRestoreLead(payload.card);
+    }
+
+    function requestMarkProcessed(ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const card = ev.currentTarget && ev.currentTarget.closest('.lead-card');
+      if (!card || card.classList.contains('lead-card--processed')) return;
+      openLeadConfirmModal('process', card);
+    }
+
+    function requestRestoreLead(ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const card = ev.currentTarget && ev.currentTarget.closest('.lead-card');
+      if (!card || !card.classList.contains('lead-card--processed')) return;
+      openLeadConfirmModal('restore', card);
+    }
+
+    function insertCardInQueueSection(card, section) {
+      const idx = parseInt(card.dataset.queueOrder || '99', 10);
+      const siblings = [...section.querySelectorAll('.lead-card')].filter(c => c !== card);
+      const next = siblings.find(c => parseInt(c.dataset.queueOrder || '99', 10) > idx);
+      if (next) section.insertBefore(card, next);
+      else section.appendChild(card);
+    }
+
+    function applyMarkProcessed(card) {
+      const id = card.dataset.lead;
+      if (!id) return;
+      const host = document.getElementById('processedCards');
+      if (!host) return;
+      const ids = getProcessedIds();
+      if (!ids.includes(id)) ids.push(id);
+      setProcessedIds(ids);
+      host.appendChild(card);
+      card.classList.add('lead-card--processed');
+      updateProcessedCount();
+      toast('Карточка в «Обработанные менеджером»');
+    }
+
+    function applyRestoreLead(card) {
+      const id = card.dataset.lead;
+      const groupId = card.dataset.queueGroup;
+      if (!id || !groupId) return;
+      const section = document.getElementById(groupId);
+      if (!section) return;
+      insertCardInQueueSection(card, section);
+      card.classList.remove('lead-card--processed');
+      const ids = getProcessedIds().filter(x => x !== id);
+      setProcessedIds(ids);
+      updateProcessedCount();
+      toast('Карточка снова в очереди');
+    }
+
+    function restoreProcessedCards() {
+      const host = document.getElementById('processedCards');
+      if (!host) return;
+      getProcessedIds().forEach(id => {
+        const card = document.querySelector('#view-queue .lead-card[data-lead="' + id + '"]');
+        if (card && !host.contains(card)) {
+          host.appendChild(card);
+          card.classList.add('lead-card--processed');
+        }
+      });
+      updateProcessedCount();
+    }
+
+    document.getElementById('leadModalOverlay').addEventListener('click', function (e) {
+      if (e.target === this) closeLeadModal();
+    });
+
+    renderDialogRows();
+    restoreProcessedCards();
+  </script>
+</body>
+</html>
