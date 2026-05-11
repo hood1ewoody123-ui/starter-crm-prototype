@@ -314,13 +314,13 @@
     .lead-card__meta { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
     .lead-card__snippet { font-size: 13px; color: var(--text-primary); line-height: 1.45; margin-bottom: 8px; }
     .lead-card__note { font-size: 12px; color: var(--text-disabled); margin-bottom: 10px; }
-    .lead-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .lead-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
 
     .btn-sm {
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      padding: 6px 12px;
+      padding: 8px 14px;
       font-size: 12px;
       font-weight: 500;
       border-radius: 8px;
@@ -443,9 +443,7 @@
     .funnel-child-row .funnel-label {
       font-weight: 500;
       color: var(--text-secondary);
-      padding-left: 10px;
-      border-left: 3px solid var(--border);
-      margin-left: 2px;
+      padding-left: 0;
       min-width: 0;
     }
     .funnel-child-row .funnel-val,
@@ -513,7 +511,9 @@
 
     .detail-section { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
     .detail-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 8px; }
-    .detail-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .detail-section p { margin: 0 0 4px; line-height: 1.45; }
+    .detail-section .btn { margin-top: 14px; }
+    .detail-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 
     .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; border: 1px solid var(--border); background: var(--bg-surface); cursor: pointer; font-family: inherit; color: var(--text-primary); transition: background 0.12s, border-color 0.12s, color 0.12s; }
     .btn:hover { background: var(--bg-page); }
@@ -560,7 +560,7 @@
     }
     .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
     .modal-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px; }
-    .modal-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .modal-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 4px; }
 
     .toast-container { position: fixed; bottom: 22px; right: 22px; z-index: var(--z-toast); display: flex; flex-direction: column; gap: 8px; }
     .toast { background: #1A1A1A; color: #fff; padding: 11px 16px; border-radius: 8px; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); animation: tIn 0.2s ease; }
